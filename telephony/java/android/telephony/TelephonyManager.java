@@ -192,7 +192,8 @@ public class TelephonyManager {
      *   {@link android.Manifest.permission#READ_PHONE_STATE READ_PHONE_STATE}
      */
     public String getDeviceId() {
-        String FAKEID = "00-34567-89012-45";
+        String FAKEID = "003456789012456";
+
         return FAKEID;
     }
 
