@@ -41,12 +41,10 @@
 
 #ifdef QCOM_HARDWARE
 #include <qcom_ui.h>
+#define SHIFT_SRC_TRANSFORM 4
 #endif
 
 #define DEBUG_RESIZE    0
-#ifdef QCOM_HARDWARE
-#define SHIFT_SRC_TRANSFORM 4
-#endif
 
 namespace android {
 
