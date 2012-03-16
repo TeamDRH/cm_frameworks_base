@@ -107,6 +107,7 @@ public class MultiWaveView extends View {
     private float mSnapMargin = 0.0f;
     private boolean mDragging;
     private int mNewTargetResources;
+    private ArrayList<Drawable> mNewTargetDrawables;
 
     private AnimatorListener mResetListener = new AnimatorListenerAdapter() {
         public void onAnimationEnd(Animator animator) {
@@ -134,6 +135,11 @@ public class MultiWaveView extends View {
             if (mNewTargetResources != 0) {
                 internalSetTargetResources(mNewTargetResources);
                 mNewTargetResources = 0;
+                hideTargets(false);
+            }
+            if (mNewTargetDrawables != null) {
+                internalSetTargetDrawables(mNewTargetDrawables);
+                mNewTargetDrawables = null;
                 hideTargets(false);
             }
             mAnimatingTargets = false;
@@ -528,6 +534,17 @@ public class MultiWaveView extends View {
         updateTargetPositions();
     }
 
+    private void internalSetTargetDrawables(ArrayList<Drawable> drawables) {
+        int count = drawables.size();
+        ArrayList<TargetDrawable> targetDrawables = new ArrayList<TargetDrawable>(count);
+        for (int i = 0; i < count; i++) {
+            Drawable drawable = drawables.get(i);
+            targetDrawables.add(new TargetDrawable(null, drawable));
+        }
+        mTargetDrawables = targetDrawables;
+        updateTargetPositions();
+    }
+
     /**
      * Loads an array of drawables from the given resourceId.
      *
@@ -540,6 +557,20 @@ public class MultiWaveView extends View {
         } else {
             internalSetTargetResources(resourceId);
         }
+    }
+
+    /**
+     * Loads an arraylist of drawables.
+     * 
+     * @param drawables
+     */
+    public void setTargetDrawables(ArrayList<Drawable> drawables) {
+         if (mAnimatingTargets) {
+             //postpone this change until we return to the initial state
+             mNewTargetDrawables = drawables;
+         } else {
+             internalSetTargetDrawables(drawables);
+         }
     }
 
     public int getTargetResourceId() {

@@ -770,6 +770,10 @@
          [bootmode]:[original USB mode]:[USB mode used]-->
     <integer-array translatable="false" name="config_oemUsbModeOverride">
     </integer-array>
+    <!-- Whether to even allow system settings for crt animations
+		setting this to false will completely disable them -->
+    <bool name="config_enableCrtAnimations">true</bool>
+
 
     <!-- CM CHANGES START HERE -->
 

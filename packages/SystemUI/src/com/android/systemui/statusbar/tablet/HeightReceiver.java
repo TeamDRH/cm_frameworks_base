@@ -42,6 +42,7 @@ public class HeightReceiver extends BroadcastReceiver {
     WindowManager mWindowManager;
     int mHeight;
     boolean mPlugged;
+    boolean mHidden;
 
     public HeightReceiver(Context context) {
         mContext = context;
@@ -97,6 +98,7 @@ public class HeightReceiver extends BroadcastReceiver {
         if (height < minHeight) {
             height = minHeight;
         }
+        if (mHidden) mHeight = 0;
         Slog.i(TAG, "Resizing status bar plugged=" + mPlugged + " height="
                 + height + " old=" + mHeight);
         mHeight = height;
@@ -109,6 +111,10 @@ public class HeightReceiver extends BroadcastReceiver {
 
     public int getHeight() {
         return mHeight;
+    }
+
+    public void setHidden (boolean status) {
+        mHidden = status;
     }
 }
 

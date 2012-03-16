@@ -19,6 +19,7 @@ package com.android.internal.policy.impl;
 import android.app.Activity;
 import android.app.ActivityManagerNative;
 import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.AlertDialog;
 import android.app.IActivityManager;
 import android.app.IUiModeManager;
 import android.app.ProgressDialog;
@@ -28,6 +29,7 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -40,6 +42,7 @@ import android.database.ContentObserver;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -80,7 +83,9 @@ import android.view.InputQueue;
 import android.view.InputHandler;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.ViewGroup;
 import android.view.WindowOrientationListener;
 import android.view.Surface;
 import android.view.View;
@@ -134,6 +139,9 @@ import android.view.KeyCharacterMap.FallbackAction;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.media.IAudioService;
 import android.media.AudioManager;
@@ -712,11 +720,199 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 mPowerKeyHandled = true;
                 performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
                 sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
-                ShutdownThread.shutdown(mContext, true);
+                showPowerMenu();
                 break;
             }
         }
     };
+    
+    private void showPowerMenu() {
+        final ArrayList<Action> list = new ArrayList<Action>();
+        Log.d(TAG, "showPowerMenu - building power menu");
+        list.add((Action) new SinglePressAction(R.drawable.ic_lock_power_off,
+                R.string.global_action_power_off) {
+            @Override
+            public boolean showDuringKeyguard() {
+                return true;
+            }
+
+            @Override
+            public boolean showBeforeProvisioning() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogBeforeAction() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogAfterAction() {
+                return false;
+            }
+
+            @Override
+            public void onPress() {
+                ShutdownThread.shutdown(mContext, true);
+            }
+        });
+        
+        list.add((Action) new SinglePressAction(R.drawable.ic_lock_reboot,
+                R.string.global_action_reboot) {
+
+            @Override
+            public boolean showDuringKeyguard() {
+                return true;
+            }
+
+            @Override
+            public boolean showBeforeProvisioning() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogBeforeAction() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogAfterAction() {
+                return false;
+            }
+
+            @Override
+            public void onPress() {
+                ShutdownThread.reboot(mContext, "", true);
+            }
+        });
+        list.add((Action) new SinglePressAction(R.drawable.ic_lock_reboot_recovery,
+                R.string.global_action_reboot_recovery) {
+
+            @Override
+            public boolean showDuringKeyguard() {
+                return true;
+            }
+
+            @Override
+            public boolean showBeforeProvisioning() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogBeforeAction() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogAfterAction() {
+                return false;
+            }
+
+            @Override
+            public void onPress() {
+                ShutdownThread.reboot(mContext, "recovery", true);
+            }
+        });
+
+        list.add((Action) new SinglePressAction(R.drawable.ic_lock_reboot_bootloader,
+                R.string.global_action_reboot_bootloader) {
+
+            @Override
+            public boolean showDuringKeyguard() {
+                return true;
+            }
+
+            @Override
+            public boolean showBeforeProvisioning() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogBeforeAction() {
+                return true;
+            }
+
+            @Override
+            public boolean dismissDialogAfterAction() {
+                return false;
+            }
+
+            @Override
+            public void onPress() {
+                ShutdownThread.reboot(mContext, "bootloader", true);
+            }
+        });
+
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY_POWER_OPTION,
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY_POWER_OPTION_DEF) == 1
+            ||  Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE) == View.GONE) {
+            Log.d(TAG, "adding statusbar toggle to power menu");
+            list.add((Action) new SinglePressAction(R.drawable.ic_lock_reboot_recovery,
+                    R.string.global_action_statusbar_toggle) {
+
+                @Override
+                public boolean showDuringKeyguard() {
+                    return true;
+                }
+
+                @Override
+                public boolean showBeforeProvisioning() {
+                    return true;
+                }
+
+                @Override
+                public boolean dismissDialogBeforeAction() {
+                    return true;
+                }
+
+                @Override
+                public boolean dismissDialogAfterAction() {
+                    return false;
+                }
+
+                @Override
+                public void onPress() {
+                    Log.d(TAG, "statusbar visibility toggle pressed");
+                    ContentResolver cr = mContext.getContentResolver();
+                    boolean statusbarVisible = Settings.System.getInt(cr,
+                            Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE)
+                            == View.VISIBLE;
+                    Settings.System.putInt(cr,
+                            Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY,
+                            statusbarVisible ? View.GONE : View.VISIBLE);
+                }
+            });
+        }
+
+        final MyAdapter adapter = new MyAdapter(list);
+        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(mContext);
+        dialogBuilder.setAdapter(adapter, new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (adapter.getItem(which).dismissDialogBeforeAction())
+                    dialog.dismiss();
+                adapter.getItem(which).onPress();
+                if (adapter.getItem(which).dismissDialogAfterAction())
+                    dialog.dismiss();
+            }
+        }).setInverseBackgroundForced(true).setTitle(R.string.power_dialog);
+
+        final AlertDialog alertDialog = dialogBuilder.create();
+        alertDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_DIALOG);
+        alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+            }
+        });
+
+        alertDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_KEYGUARD_DIALOG);
+        
+        alertDialog.show();
+    }
 
     private final Runnable mScreenshotChordLongPress = new Runnable() {
         public void run() {
@@ -4002,5 +4198,129 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 pw.print(" mSeascapeRotation="); pw.println(mSeascapeRotation);
         pw.print(prefix); pw.print("mPortraitRotation="); pw.print(mPortraitRotation);
                 pw.print(" mUpsideDownRotation="); pw.println(mUpsideDownRotation);
+    }
+    
+    private class MyAdapter extends BaseAdapter {
+        private ArrayList<Action> mLocalItems;
+        
+        public MyAdapter (ArrayList<Action> items){
+            super();
+            mLocalItems = new ArrayList<Action>();
+            mLocalItems.addAll(items);
+        }
+        
+        public int getCount() {
+            int count = 0;
+
+            for (int i = 0; i < mLocalItems.size(); i++) {
+                final Action action = mLocalItems.get(i);
+                count++;
+            }
+            return count;
+        }
+
+        @Override
+        public boolean isEnabled(int position) {
+            return getItem(position).isEnabled();
+        }
+
+        @Override
+        public boolean areAllItemsEnabled() {
+            return false;
+        }
+
+        public Action getItem(int position) {
+
+            int filteredPos = 0;
+            for (int i = 0; i < mLocalItems.size(); i++) {
+                final Action action = mLocalItems.get(i);
+                if (filteredPos == position) {
+                    return action;
+                }
+                filteredPos++;
+            }
+
+            throw new IllegalArgumentException("position " + position
+                    + " out of range of showable actions"
+                    + ", filtered count=" + getCount());
+        }
+
+
+        public long getItemId(int position) {
+            return position;
+        }
+
+        public View getView(int position, View convertView, ViewGroup parent) {
+            Action action = getItem(position);
+            return action.create(mContext, convertView, parent, LayoutInflater.from(mContext));
+        }
+    }
+
+    // note: the scheme below made more sense when we were planning on having
+    // 8 different things in the global actions dialog.  seems overkill with
+    // only 3 items now, but may as well keep this flexible approach so it will
+    // be easy should someone decide at the last minute to include something
+    // else, such as 'enable wifi', or 'enable bluetooth'
+
+    /**
+     * What each item in the global actions dialog must be able to support.
+     */
+    private interface Action {
+        View create(Context context, View convertView, ViewGroup parent, LayoutInflater inflater);
+
+        void onPress();
+
+        /**
+         * @return whether this action should appear in the dialog when the keygaurd
+         *    is showing.
+         */
+        boolean showDuringKeyguard();
+
+        /**
+         * @return whether this action should appear in the dialog before the
+         *   device is provisioned.
+         */
+        boolean showBeforeProvisioning();
+
+        boolean isEnabled();
+        
+        boolean dismissDialogBeforeAction();
+        
+        boolean dismissDialogAfterAction();
+    }
+
+    /**
+     * A single press action maintains no state, just responds to a press
+     * and takes an action.
+     */
+    private static abstract class SinglePressAction implements Action {
+        private final int mIconResId;
+        private final int mMessageResId;
+
+        protected SinglePressAction(int iconResId, int messageResId) {
+            mIconResId = iconResId;
+            mMessageResId = messageResId;
+        }
+
+        public boolean isEnabled() {
+            return true;
+        }
+
+        abstract public void onPress();
+
+        public View create(
+                Context context, View convertView, ViewGroup parent, LayoutInflater inflater) {
+            View v = inflater.inflate(R.layout.global_actions_item, parent, false);
+
+            ImageView icon = (ImageView) v.findViewById(R.id.icon);
+            TextView messageView = (TextView) v.findViewById(R.id.message);
+
+            v.findViewById(R.id.status).setVisibility(View.GONE);
+
+            icon.setImageDrawable(context.getResources().getDrawable(mIconResId));
+            messageView.setText(mMessageResId);
+
+            return v;
+        }
     }
 }
