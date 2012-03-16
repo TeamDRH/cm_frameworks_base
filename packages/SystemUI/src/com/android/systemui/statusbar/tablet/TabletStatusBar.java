@@ -22,18 +22,21 @@ import java.util.ArrayList;
 
 import android.animation.LayoutTransition;
 import android.animation.ObjectAnimator;
+import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
 import android.app.KeyguardManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.CustomTheme;
@@ -82,6 +85,7 @@ import com.android.systemui.R;
 import com.android.systemui.recent.RecentTasksLoader;
 import com.android.systemui.recent.RecentsPanelView;
 import com.android.systemui.statusbar.NotificationData;
+import com.android.systemui.statusbar.SettingsObserver;
 import com.android.systemui.statusbar.SignalClusterView;
 import com.android.systemui.statusbar.StatusBar;
 import com.android.systemui.statusbar.StatusBarIconView;
@@ -114,6 +118,13 @@ public class TabletStatusBar extends StatusBar implements
     public static final int MSG_OPEN_COMPAT_MODE_PANEL = 1050;
     public static final int MSG_CLOSE_COMPAT_MODE_PANEL = 1051;
     public static final int MSG_STOP_TICKER = 2000;
+    
+    private static final int MSG_DRH_BATTERY_TEXT = 1500;
+    private static final int MSG_DRH_BATTERY_ICON = 1501;
+    private static final int MSG_DRH_STATUSBAR_VISIBILITY = 1502;
+    private static final int MSG_DRH_CLOCK = 1503;
+    private static final int MSG_DRH_QUICKLAUNCH = 1504;
+    private static final int MSG_DRH_STATUSBAR_GRAVITY = 1505;
 
     // Fitts' Law assistance for LatinIME; see policy.EventHole
     private static final boolean FAKE_SPACE_BAR = true;
@@ -152,6 +163,7 @@ public class TabletStatusBar extends StatusBar implements
     View mHomeButton;
     View mMenuButton;
     View mRecentButton;
+    LinearLayout mDrhQuickLaunch;
 
     ViewGroup mFeedbackIconArea; // notification icons, IME icon, compat icon
     InputMethodButton mInputMethodSwitchButton;
@@ -171,7 +183,6 @@ public class TabletStatusBar extends StatusBar implements
     ViewGroup mPile;
 
     HeightReceiver mHeightReceiver;
-    BatteryController mBatteryController;
     DockBatteryController mDockBatteryController;
     BluetoothController mBluetoothController;
     LocationController mLocationController;
@@ -205,6 +216,9 @@ public class TabletStatusBar extends StatusBar implements
     // used to notify status bar for suppressing notification LED
     private boolean mPanelSlightlyVisible;
 
+    private SettingsObserver mStatusbarVisibilitySettingObserver;
+    private SettingsObserver mQuickLaunchSettingObserver;
+
     public Context getContext() { return mContext; }
 
     private StorageManager mStorageManager;
@@ -226,11 +240,6 @@ public class TabletStatusBar extends StatusBar implements
         mNotificationPanel.show(false, false);
         mNotificationPanel.setOnTouchListener(
                 new TouchOutsideListener(MSG_CLOSE_NOTIFICATION_PANEL, mNotificationPanel));
-
-        // the battery icon
-        mBatteryController.addIconView((ImageView)mNotificationPanel.findViewById(R.id.battery));
-        mBatteryController.addLabelView(
-                (TextView)mNotificationPanel.findViewById(R.id.battery_text));
 
         if (mHasDockBattery) {
             mDockBatteryController.addIconView((ImageView)mNotificationPanel.findViewById(R.id.dock_battery));
@@ -559,13 +568,9 @@ public class TabletStatusBar extends StatusBar implements
         // The icons
         mLocationController = new LocationController(mContext); // will post a notification
 
+
         mHasDockBattery = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_hasDockBattery);
-
-        mBatteryController = new BatteryController(mContext);
-        mBatteryController.addIconView((ImageView)sb.findViewById(R.id.battery));
-        mBatteryController.addLabelView(
-                (TextView)sb.findViewById(R.id.battery_text));
 
         if (mHasDockBattery) {
             mDockBatteryController = new DockBatteryController(mContext);
@@ -587,6 +592,8 @@ public class TabletStatusBar extends StatusBar implements
         mMenuButton = mNavigationArea.findViewById(R.id.menu);
         mRecentButton = mNavigationArea.findViewById(R.id.recent_apps);
         mRecentButton.setOnClickListener(mOnClickListener);
+        mDrhQuickLaunch = (LinearLayout) sb.findViewById(R.id.drh_quicklaunch);
+        updateQuickLaunchIcons();
 
         LayoutTransition lt = new LayoutTransition();
         lt.setDuration(250);
@@ -694,6 +701,21 @@ public class TabletStatusBar extends StatusBar implements
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         context.registerReceiver(mBroadcastReceiver, filter);
 
+        mQuickLaunchSettingObserver = new SettingsObserver(mHandler, MSG_DRH_QUICKLAUNCH);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.DRH_SYSTEMUI_QUICKLAUNCH_ACTIONS), true,
+                mQuickLaunchSettingObserver);
+
+        mStatusbarVisibilitySettingObserver = new SettingsObserver(mHandler,
+                MSG_DRH_STATUSBAR_VISIBILITY);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY), true,
+                mStatusbarVisibilitySettingObserver);
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE) == View.GONE) {
+            mStatusBarView.setVisibility(View.GONE);
+            mHeightReceiver.setHidden(true);
+        }
         return sb;
     }
 
@@ -702,7 +724,14 @@ public class TabletStatusBar extends StatusBar implements
     }
 
     protected int getStatusBarGravity() {
-        return Gravity.BOTTOM | Gravity.FILL_HORIZONTAL;
+        if (Settings.System.getInt(mContext.getContentResolver(), 
+                Settings.System.DRH_STATUSBAR_GRAVITY, 0) == 1) {
+            return Gravity.TOP;
+        } else {
+            return Gravity.BOTTOM;
+        }
+
+
     }
 
     public void onBarHeightChanged(int height) {
@@ -861,6 +890,12 @@ public class TabletStatusBar extends StatusBar implements
                     break;
                 case MSG_STOP_TICKER:
                     mTicker.halt();
+                    break;
+                case MSG_DRH_STATUSBAR_VISIBILITY:
+                    updateStatusBarVisibility();
+                    break;
+                case MSG_DRH_QUICKLAUNCH:
+                    updateQuickLaunchIcons();
                     break;
             }
         }
@@ -1089,6 +1124,7 @@ public class TabletStatusBar extends StatusBar implements
         mBackButton.setVisibility(disableBack ? View.INVISIBLE : View.VISIBLE);
         mHomeButton.setVisibility(disableHome ? View.INVISIBLE : View.VISIBLE);
         mRecentButton.setVisibility(disableRecent ? View.INVISIBLE : View.VISIBLE);
+        mDrhQuickLaunch.setVisibility(disableRecent ? View.INVISIBLE : View.VISIBLE);
 
         mInputMethodSwitchButton.setScreenLocked(
                 (visibility & StatusBarManager.DISABLE_SYSTEM_INFO) != 0);
@@ -1999,6 +2035,90 @@ public class TabletStatusBar extends StatusBar implements
         pw.println("mNetworkController:");
         mNetworkController.dump(fd, pw, args);
     }
+
+    private void updateStatusBarVisibility () {
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE) == View.VISIBLE) {
+            mStatusBarView.setVisibility(View.VISIBLE);
+            mHeightReceiver.setHidden(false);
+            notifyUiVisibilityChanged();
+        } else {
+            mStatusBarView.setVisibility(View.GONE);
+            mHeightReceiver.setHidden(true);
+            notifyUiVisibilityChanged();
+        }
+    }
+
+    private void updateQuickLaunchIcons() {
+        mDrhQuickLaunch.removeAllViews();
+        String actions = Settings.System.getString(mContext.getContentResolver(),
+                Settings.System.DRH_SYSTEMUI_QUICKLAUNCH_ACTIONS);
+        if (actions == null) return;
+
+        String[] actionArray = actions.split("\\|");
+        for (String action : actionArray) {
+            ImageView actionImageView = new ImageView(mContext);
+            actionImageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(36, 36);
+            lp.gravity = Gravity.CENTER_VERTICAL;
+            lp.setMargins(5, 2, 5, 2);
+            actionImageView.setLayoutParams(lp);
+
+            PackageManager pm = (PackageManager) mContext.getPackageManager();
+            if (action.startsWith("app:")) {
+                try {
+                    String activity = action.substring(4);
+                    ComponentName component = ComponentName.unflattenFromString(activity);
+                    Intent intent = new Intent();
+                    intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                    intent.setComponent(component);
+                    Drawable drawable = pm.getActivityIcon(intent);
+                    if (drawable == null) continue;
+
+                    actionImageView.setImageDrawable(drawable);
+                    actionImageView.setOnClickListener(new QuickLaunchOnClickListener(action));
+                    mDrhQuickLaunch.addView(actionImageView);
+                } catch (PackageManager.NameNotFoundException e) {
+                    continue;
+                }
+            }
+        }
+    }
+
+    private class QuickLaunchOnClickListener implements View.OnClickListener {
+        String mAction;
+
+        QuickLaunchOnClickListener(String action) {
+            mAction = action;
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (mAction.startsWith("app:")) {
+                String activity = mAction.substring(4);
+                ComponentName component = ComponentName.unflattenFromString(activity);
+
+                /* Try to launch the activity from history, if available. */
+                ActivityManager activityManager = (ActivityManager) mContext
+                        .getSystemService(Context.ACTIVITY_SERVICE);
+                for (ActivityManager.RecentTaskInfo task : activityManager.getRecentTasks(20,
+                        ActivityManager.RECENT_IGNORE_UNAVAILABLE)) {
+                    if (task != null && task.origActivity != null &&
+                            task.origActivity.equals(component)) {
+                        activityManager.moveTaskToFront(task.id,
+                                ActivityManager.MOVE_TASK_WITH_HOME);
+                        return;
+                    }
+                }
+
+                Intent intent = new Intent();
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setComponent(component);
+                intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
+                        | Intent.FLAG_ACTIVITY_TASK_ON_HOME
+                        | Intent.FLAG_ACTIVITY_NEW_TASK);
+                mContext.startActivity(intent);
+            }
+        }
+    }
 }
-
-

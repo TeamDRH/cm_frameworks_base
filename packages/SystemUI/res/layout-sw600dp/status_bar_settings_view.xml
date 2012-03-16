@@ -28,6 +28,16 @@
         android:orientation="vertical"
         >
 
+    <LinearLayout
+            android:id="@+id/drh_settings"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            >
+
+    </LinearLayout>
+
     <!-- Airplane mode -->
     <LinearLayout
             android:id="@+id/airplane"
@@ -128,8 +138,26 @@
     </LinearLayout>
     <View style="@style/StatusBarPanelSettingsPanelSeparator" />
 
+    <!-- Sound -->
+    <LinearLayout style="@style/StatusBarPanelSettingsRow" android:id="@+id/volume_row">
+        <ImageView
+                android:id="@+id/drh_sound_icon"
+                style="@style/StatusBarPanelSettingsIcon"
+                android:src="@drawable/ic_audio_vol"
+                />
+        <com.android.systemui.statusbar.policy.ToggleSlider
+                android:id="@+id/volume"
+                android:layout_width="0dp"
+                android:layout_height="fill_parent"
+                android:layout_weight="1"
+                android:layout_marginRight="2dp"
+                systemui:text="@string/statusbar_drh_volume_slider_label"
+                />
+    </LinearLayout>
+   
+
     <!-- Brightness -->
-    <LinearLayout style="@style/StatusBarPanelSettingsRow" >
+    <LinearLayout style="@style/StatusBarPanelSettingsRow" android:id="@+id/brightness_row">
         <ImageView
                 android:id="@+id/brightness_icon"
                 style="@style/StatusBarPanelSettingsIcon"

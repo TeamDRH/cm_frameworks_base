@@ -139,22 +139,10 @@
                 android:layout_width="wrap_content"
                 android:paddingLeft="4dip"
                 />
-            <TextView
-                android:id="@+id/battery_text"
-                android:textAppearance="@style/TextAppearance.StatusBar.Battery"
+            <include layout="@layout/battery_cluster_view"
+                android:id="@+id/battery_cluster"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:singleLine="true"
-                android:textSize="20sp"
-                android:paddingLeft="4dip"
-                android:layout_marginRight="-3dip"
-                android:gravity="center_vertical|left"
-                />
-            <ImageView
-                android:id="@+id/battery"
                 android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:paddingLeft="4dip"
                 />
         </LinearLayout>
     </LinearLayout>

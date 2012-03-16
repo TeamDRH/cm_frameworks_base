@@ -24,6 +24,7 @@ import android.app.Profile;
 import android.app.ProfileManager;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -89,6 +90,11 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private boolean mDeviceProvisioned = false;
     private ToggleAction.State mAirplaneState = ToggleAction.State.Off;
     private boolean mIsWaitingForEcmExit = false;
+    private boolean mEnablePowerMenu = true;
+    private boolean mEnableRebootMenu = true;
+    private boolean mEnableProfiles = true;
+    private boolean mEnableScreenshot = true;
+    private boolean mEnableAirplaneMode = true;
 
     private Profile mChosenProfile;
 
@@ -119,9 +125,12 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     public void showDialog(boolean keyguardShowing, boolean isDeviceProvisioned) {
         mKeyguardShowing = keyguardShowing;
         mDeviceProvisioned = isDeviceProvisioned;
-        if (mDialog == null) {
-            mDialog = createDialog();
+        if (mDialog != null) {
+            mDialog.cancel();
         }
+        //always update the PowerMenu dialog
+        mDialog = createDialog();
+
         prepareDialog();
 
         mDialog.show();
@@ -134,6 +143,22 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
      */
     private AlertDialog createDialog() {
         mSilentModeAction = new SilentModeAction(mAudioManager, mHandler);
+
+        mEnablePowerMenu = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_DIALOG_SHOW_POWER_MENU, 1) == 1;
+
+        mEnableRebootMenu = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_DIALOG_SHOW_REBOOT_MENU, 1) == 1;
+        
+        mEnableProfiles = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_DIALOG_SHOW_PROFILES_MENU, 1) == 1;
+
+        mEnableScreenshot = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_DIALOG_SHOW_SCREENSHOT, 1) == 1;
+
+        mEnableAirplaneMode = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_DIALOG_SHOW_AIRPLANE_MODE, 1) == 1;
+
 
         mAirplaneModeOn = new ToggleAction(
                 R.drawable.ic_lock_airplane_mode,
@@ -178,6 +203,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         mItems = new ArrayList<Action>();
 
         // first: power off
+        if (mEnablePowerMenu) {
         mItems.add(
             new SinglePressAction(
                     com.android.internal.R.drawable.ic_lock_power_off,
@@ -196,8 +222,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     return true;
                 }
             });
+        }
 
         // next: reboot
+        if (mEnableRebootMenu) {
         mItems.add(
             new SinglePressAction(com.android.internal.R.drawable.ic_lock_reboot, R.string.global_action_reboot) {
                 public void onPress() {
@@ -212,8 +240,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     return true;
                 }
             });
+        }
 
         // next: profile
+        if (mEnableProfiles) {
         mItems.add(
             new ProfileChooseAction() {
                 public void onPress() {
@@ -228,8 +258,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     return false;
                 }
             });
+        }
 
         // next: screenshot
+        if (mEnableScreenshot) {
         mItems.add(
             new SinglePressAction(com.android.internal.R.drawable.ic_lock_screenshot, R.string.global_action_screenshot) {
                 public void onPress() {
@@ -244,9 +276,52 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     return true;
                 }
             });
+        }
 
         // next: airplane mode
+        if (mEnableAirplaneMode) {
         mItems.add(mAirplaneModeOn);
+        }
+
+        // statusbar visibility toggle
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY_POWER_OPTION,
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY_POWER_OPTION_DEF) == 1
+            ||  Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE) == View.GONE) {
+            Log.d(TAG, "adding statusbar toggle to power menu");
+            mItems.add(
+                new SinglePressAction(R.drawable.ic_lock_reboot_recovery,
+                    R.string.global_action_statusbar_toggle) {
+
+                public boolean showDuringKeyguard() {
+                    return true;
+                }
+
+                public boolean showBeforeProvisioning() {
+                    return true;
+                }
+
+                public boolean dismissDialogBeforeAction() {
+                    return true;
+                }
+
+                public boolean dismissDialogAfterAction() {
+                    return false;
+                }
+
+                public void onPress() {
+                    Log.d(TAG, "statusbar visibility toggle pressed");
+                    ContentResolver cr = mContext.getContentResolver();
+                    boolean statusbarVisible = Settings.System.getInt(cr,
+                            Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE)
+                            == View.VISIBLE;
+                    Settings.System.putInt(cr,
+                            Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY,
+                            statusbarVisible ? View.GONE : View.VISIBLE);
+                }
+            });
+        }
 
         // last: silent mode
         if (SHOW_SILENT_TOGGLE) {

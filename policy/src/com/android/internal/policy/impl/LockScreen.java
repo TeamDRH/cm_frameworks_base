@@ -23,10 +23,15 @@ import com.android.internal.widget.WaveView;
 import com.android.internal.widget.multiwaveview.MultiWaveView;
 
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ComponentInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,6 +43,7 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  * The screen within {@link LockPatternKeyguardView} that shows general
@@ -185,6 +191,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 
         private final MultiWaveView mMultiWaveView;
         private boolean mCameraDisabled;
+        private ArrayList<String> mUnlockActions;
+        private ArrayList<Drawable> mUnlockDrawables;
 
         MultiWaveViewMethods(MultiWaveView multiWaveView) {
             mMultiWaveView = multiWaveView;
@@ -199,18 +207,65 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
                 mCameraDisabled = mMultiWaveView.getTargetResourceId()
                         != R.array.lockscreen_targets_with_camera;
             }
+            
+            boolean allNull = true;
+
+            mUnlockActions = new ArrayList<String>();
+            mUnlockDrawables = new ArrayList<Drawable>();
+            Resources res = mContext.getResources();
+            String unlockActions = Settings.System.getString(mContext.getContentResolver(),
+                    Settings.System.DRH_LOCKSCREEN_UNLOCK_ACTIONS);
+            if (unlockActions == null) {
+                unlockActions = res.getString(R.string.drh_lockscreen_default_targets);
+            }
+            String[] actions = unlockActions.split("\\|");
+            PackageManager pm = mContext.getPackageManager();
+            for (int i = 0; i < actions.length; i++) {
+                String action = actions[i];
+                Drawable drawable = null;
+                if (action == null || action.equals("")) continue;
+                if (action.equals("app:com.android.camera") && mCameraDisabled) continue;
+                
+                if (action.equals("unlock")) {
+                    drawable = res.getDrawable(R.drawable.ic_lockscreen_unlock);
+                } else if (action.equals("app:com.android.camera/com.android.camera.Camera")) {
+                    drawable = res.getDrawable(R.drawable.ic_lockscreen_camera);
+                } else if (action.startsWith("app:")) {
+                    try {
+                        String activity = action.substring(4);
+                        ComponentName component = ComponentName.unflattenFromString(activity);
+                        Intent intent = new Intent();
+                        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                        intent.setComponent(component);
+                        drawable = pm.getActivityIcon(intent);
+                    } catch (PackageManager.NameNotFoundException e) {
+                        Log.d("drh", "namenotfound ... " + action);
+                    }
+                } else {
+                    drawable = null;
+                }
+
+                if (drawable != null) {
+                    if (allNull) allNull = false;
+                    mUnlockActions.add(action);
+                    mUnlockDrawables.add(drawable);
+                } else {
+                    mUnlockActions.add(null);
+                    mUnlockDrawables.add(null);
+                }
+            }
+
+            /* Put a safe guard in so that if the user deletes all of the actions we can still
+             * unlock. */
+            if (mUnlockActions.size() == 0 || allNull) {
+                Drawable drawable = drawable = res.getDrawable(R.drawable.ic_lockscreen_unlock);
+                mUnlockActions.add("unlock");
+                mUnlockDrawables.add(drawable);
+            }
         }
 
         public void updateResources() {
-            int resId;
-            if (mCameraDisabled) {
-                // Fall back to showing ring/silence if camera is disabled by DPM...
-                resId = mSilentMode ? R.array.lockscreen_targets_when_silent
-                    : R.array.lockscreen_targets_when_soundon;
-            } else {
-                resId = R.array.lockscreen_targets_with_camera;
-            }
-            mMultiWaveView.setTargetResources(resId);
+            mMultiWaveView.setTargetDrawables(mUnlockDrawables);
         }
 
         public void onGrabbed(View v, int handle) {
@@ -222,21 +277,48 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
         }
 
         public void onTrigger(View v, int target) {
-            if (target == 0 || target == 1) { // 0 = unlock/portrait, 1 = unlock/landscape
+            String action = mUnlockActions.get(target);
+            if (action == null) {
+                
+            }else if (action.equals("unlock")) {
                 mCallback.goToUnlockScreen();
-            } else if (target == 2 || target == 3) { // 2 = alt/portrait, 3 = alt/landscape
-                if (!mCameraDisabled) {
-                    // Start the Camera
-                    Intent intent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    mContext.startActivity(intent);
-                    mCallback.goToUnlockScreen();
-                } else {
-                    toggleRingMode();
-                    mUnlockWidgetMethods.updateResources();
-                    mCallback.pokeWakelock();
+            } else if (action.equals("app:com.android.camera/com.android.camera.Camera")) {
+                Intent intent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                mContext.startActivity(intent);
+                mCallback.goToUnlockScreen();
+            } else if (action.startsWith("app:")) {
+                PackageManager pm = mContext.getPackageManager();
+                String activity = action.substring(4);
+                ComponentName component = ComponentName.unflattenFromString(activity);
+
+                /* Try to launch the activity from history, if available. */
+                ActivityManager activityManager = (ActivityManager) mContext
+                        .getSystemService(Context.ACTIVITY_SERVICE);
+                for (ActivityManager.RecentTaskInfo task : activityManager.getRecentTasks(20,
+                        ActivityManager.RECENT_IGNORE_UNAVAILABLE)) {
+                    if (task != null && task.origActivity != null &&
+                            task.origActivity.equals(component)) {
+                        activityManager.moveTaskToFront(task.id, ActivityManager.MOVE_TASK_WITH_HOME);
+                        mCallback.goToUnlockScreen();
+                        return;
+                    }
                 }
+
+                Intent intent = new Intent();
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setComponent(component);
+                intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
+                        | Intent.FLAG_ACTIVITY_TASK_ON_HOME
+                        | Intent.FLAG_ACTIVITY_NEW_TASK);
+                mContext.startActivity(intent);
+                mCallback.goToUnlockScreen();
+            } else {
+                toggleRingMode();
+                mUnlockWidgetMethods.updateResources();
+                mCallback.pokeWakelock();
             }
+
         }
 
         public void onGrabbedStateChange(View v, int handle) {
@@ -298,8 +380,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
         final boolean configDisabled = res.getBoolean(R.bool.config_disableMenuKeyInLockScreen);
         final boolean isTestHarness = ActivityManager.isRunningInTestHarness();
         final boolean fileOverride = (new File(ENABLE_MENU_KEY_FILE)).exists();
-        final boolean menuOverride = Settings.System.getInt(getContext().getContentResolver(), Settings.System.MENU_UNLOCK_SCREEN, 0) == 1;
-        return !configDisabled || isTestHarness || fileOverride || menuOverride;
+        return !configDisabled || isTestHarness || fileOverride;
     }
 
     /**

@@ -16,12 +16,19 @@
 
 package com.android.systemui.statusbar.phone;
 
+import com.android.systemui.R;
+import com.android.systemui.statusbar.SettingsObserver;
+import com.android.systemui.statusbar.preferences.DrhSettings;
+
 import android.content.Context;
 import android.os.Handler;
+import android.os.Message;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.view.Display;
 import android.view.KeyEvent;
 import android.view.WindowManager;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 
@@ -30,14 +37,26 @@ public class TrackingView extends LinearLayout {
     boolean mTracking;
     int mStartX, mStartY;
     Handler mHandler = new Handler();
+    SettingsObserver mDrhSettingsObserver;
+    static DrhSettings mDrhSettings = null;
+    
+    private static final int MSG_DRH_SYSTEMUI_SETTINGS_PHONE_BOTTOM = 1000;
 
     public TrackingView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        mDrhSettingsObserver = new SettingsObserver(new H(), MSG_DRH_SYSTEMUI_SETTINGS_PHONE_BOTTOM);
+        getContext().getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.DRH_SYSTEMUI_SETTINGS_PHONE_BOTTOM), true, mDrhSettingsObserver);
     }
     
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
+        if (Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_ENABLED, 0) == 1 &&
+        		Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_PHONE_BOTTOM, 0) == 1 &&
+        		mDrhSettings == null){
+        	mDrhSettings = new DrhSettings((ViewGroup) findViewById(R.id.drh_settings), getContext());
+        	findViewById(R.id.drh_settings).setVisibility(VISIBLE);
+        }
     }
 
     @Override
@@ -68,6 +87,12 @@ public class TrackingView extends LinearLayout {
                     mService.updateExpandedViewPos(PhoneStatusBar.EXPANDED_LEAVE_ALONE);
                 }
             });
+            if (mDrhSettings != null){
+            	mDrhSettings.attach();
+            }
+        }else {
+        	if (mDrhSettings != null)
+        		mDrhSettings.detach();
         }
     }
 
@@ -75,5 +100,28 @@ public class TrackingView extends LinearLayout {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mService.onTrackingViewDetached();
+    }
+    
+    private void updateDrhSystemUISettings () {
+    	if (Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_ENABLED, 0) == 1 &&
+    			Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_PHONE_BOTTOM, 0) == 0){
+    		if (mDrhSettings != null) mDrhSettings.detach();
+    		mDrhSettings = null;
+    		findViewById(R.id.drh_settings).setVisibility(GONE);
+    		((ViewGroup) findViewById(R.id.drh_settings)).removeAllViews();
+    	}else {
+    		mDrhSettings = new DrhSettings((ViewGroup) findViewById(R.id.drh_settings), getContext());
+    		findViewById(R.id.drh_settings).setVisibility(VISIBLE);
+    	}
+    }
+    
+    private class H extends Handler {
+    	public void handleMessage(Message m) {
+    		switch (m.what) {
+    		case MSG_DRH_SYSTEMUI_SETTINGS_PHONE_BOTTOM:
+    			updateDrhSystemUISettings();
+    			break;
+    		}
+    	}
     }
 }

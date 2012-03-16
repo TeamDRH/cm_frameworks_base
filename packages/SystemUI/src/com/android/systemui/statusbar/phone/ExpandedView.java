@@ -16,17 +16,31 @@
 
 package com.android.systemui.statusbar.phone;
 
+import com.android.systemui.R;
+import com.android.systemui.statusbar.SettingsObserver;
+import com.android.systemui.statusbar.preferences.DrhSettings;
+
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Slog;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 public class ExpandedView extends LinearLayout {
     PhoneStatusBar mService;
     int mPrevHeight = -1;
+    DrhSettings mDrhSettings;
+    SettingsObserver mDrhSettingsObserver;
+    
+    private static final int MSG_DRH_SYSTEMUI_SETTINGS_PHONE_TOP = 1000;
 
     public ExpandedView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        mDrhSettingsObserver = new SettingsObserver(new H(), MSG_DRH_SYSTEMUI_SETTINGS_PHONE_TOP);
+        getContext().getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.DRH_SYSTEMUI_SETTINGS_PHONE_TOP), true, mDrhSettingsObserver);
     }
 
     @Override
@@ -52,5 +66,33 @@ public class ExpandedView extends LinearLayout {
              mPrevHeight = height;
              mService.updateExpandedViewPos(PhoneStatusBar.EXPANDED_LEAVE_ALONE);
          }
+         
+         if (Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_ENABLED, 0) == 1 &&
+        		 Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_PHONE_TOP, 0) == 1 &&
+        		 mDrhSettings == null){
+        	 mDrhSettings = new DrhSettings(((ViewGroup) findViewById(R.id.drh_settings)), mContext);
+        	 findViewById(R.id.drh_settings).setVisibility(VISIBLE);
+         }
      }
+    
+    private void updateDrhSettings() {
+        if (Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_ENABLED, 0) == 1 &&
+        		Settings.System.getInt(getContext().getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_PHONE_TOP, 0) == 1){
+       	 mDrhSettings = new DrhSettings(((ViewGroup) findViewById(R.id.drh_settings)), mContext);
+       	 findViewById(R.id.drh_settings).setVisibility(VISIBLE);
+        }else {
+        	if (mDrhSettings != null) mDrhSettings.detach();
+        	mDrhSettings = null;
+        	findViewById(R.id.drh_settings).setVisibility(GONE);
+        }
+    }
+    
+    private class H extends Handler {
+    	public void handleMessage(Message m){
+    		switch (m.what){
+    		case MSG_DRH_SYSTEMUI_SETTINGS_PHONE_TOP: updateDrhSettings();
+    			break;
+    		}
+    	}
+    }
 }
