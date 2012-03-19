@@ -30,7 +30,7 @@
 	</launcher>
 	<layout width="1024" height="600">
 		<landscape>
-			<width>450</width>
+			<width>320</width>
 			<height>257</height>
 			<handler>
 				<width>38</width>
@@ -41,7 +41,7 @@
 		</landscape>
 		<portrait>
 			<width>298</width>
-			<height>330</height>
+			<height>450</height>
 			<handler>
 				<width>38</width>
 			</handler>
