@@ -20,6 +20,7 @@ import com.android.internal.view.IInputContext;
 import com.android.internal.view.IInputMethodClient;
 import com.android.internal.view.IInputMethodManager;
 import com.android.server.wm.WindowManagerService.H;
+import com.android.server.wm.WindowManagerService.WindowPanel;
 
 import android.content.ClipData;
 import android.content.Context;
@@ -386,6 +387,19 @@ final class Session extends IWindowSession.Stub
 
     public void wallpaperCommandComplete(IBinder window, Bundle result) {
         mService.wallpaperCommandComplete(window, result);
+    }
+
+   /**
+    * Author: Onskreen
+    * Date: 14/02/2011
+    *
+    * Trigger a move of all the contents of a WindowPanel to the top of the z-order. Also triggers move
+    * of all tokens/window panels that are in the same panel to the top. This is to ensure that the z-order
+    * contains all the app tokesn in order from the same panel at the top.
+    *
+    */
+    public void handleFocusChange(IBinder token) {
+	  mService.handleFocusChangeLocked(token);
     }
 
     void windowAddedLocked() {

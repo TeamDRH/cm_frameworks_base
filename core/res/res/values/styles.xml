@@ -77,6 +77,25 @@ please see styles_device_defaults.xml.
 
     <!-- Standard animations for a full-screen window or activity. -->
     <style name="Animation.Activity">
+
+		<!--
+			Author: Onskreen
+			Date: 16/03/2011
+			Cornerstone open/close animation styles
+		-->
+        <item name="activityOpenEnterAnimation_reverse">@anim/activity_open_enter_reverse</item>
+        <item name="activityOpenExitAnimation_reverse">@anim/activity_open_exit_reverse</item>
+        <item name="activityCloseEnterAnimation_reverse">@anim/activity_close_enter_reverse</item>
+        <item name="activityCloseExitAnimation_reverse">@anim/activity_close_exit_reverse</item>
+        <item name="taskOpenEnterAnimation_reverse">@anim/task_open_enter_reverse</item>
+        <item name="taskOpenExitAnimation_reverse">@anim/task_open_exit_reverse</item>
+        <item name="taskCloseEnterAnimation_reverse">@anim/task_close_enter_reverse</item>
+        <item name="taskCloseExitAnimation_reverse">@anim/task_close_exit_reverse</item>
+        <item name="taskToFrontEnterAnimation_reverse">@anim/task_open_enter_reverse</item>
+        <item name="taskToFrontExitAnimation_reverse">@anim/task_open_exit_reverse</item>
+        <item name="taskToBackEnterAnimation_reverse">@anim/task_close_enter_reverse</item>
+        <item name="taskToBackExitAnimation_reverse">@anim/task_close_exit_reverse</item>
+
         <item name="activityOpenEnterAnimation">@anim/activity_open_enter</item>
         <item name="activityOpenExitAnimation">@anim/activity_open_exit</item>
         <item name="activityCloseEnterAnimation">@anim/activity_close_enter</item>

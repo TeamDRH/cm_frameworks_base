@@ -19,6 +19,7 @@ package com.android.server.wm;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_STARTING;
 
 import com.android.server.wm.WindowManagerService.H;
+import com.android.server.wm.WindowManagerService.WindowPanel;
 
 import android.content.pm.ActivityInfo;
 import android.os.Message;
@@ -106,9 +107,20 @@ class AppWindowToken extends WindowToken {
     // Input application handle used by the input dispatcher.
     final InputApplicationHandle mInputApplicationHandle;
 
+    /**
+     * Author: Onskreen
+     * Date: 11/02/2010
+     *
+     * Flag indiciating if token is the cornerstone.
+     */
+    boolean isCornerstone;
+
+    final WindowManagerService mService;
+
     AppWindowToken(WindowManagerService _service, IApplicationToken _token) {
         super(_service, _token.asBinder(),
                 WindowManager.LayoutParams.TYPE_APPLICATION, true);
+	mService = _service;
         appWindowToken = this;
         appToken = _token;
         mInputApplicationHandle = new InputApplicationHandle(this);
@@ -134,6 +146,48 @@ class AppWindowToken extends WindowToken {
             animLayerAdjustment = adj;
             updateLayers();
         }
+    }
+
+    /**
+     * Author: Onskreen
+     * Date: 11/03/2011
+     *
+     * Utility method to check if the token is in the main panel or not. Returns true
+     * if can't figure out which panel it is in
+     */
+     public boolean isInMainPanelWindowPanel() {
+		final ArrayList<WindowPanel> WindowPanels = mService.getWindowPanels();
+		for(int i=0; i<WindowPanels.size(); i++) {
+			WindowPanel wp = WindowPanels.get(i);
+			if(wp.isMainPanel()) {
+				if(wp.contains(token)) {
+					return true;
+				} else {
+					break;
+				}
+			}
+		}
+		return false;
+     }
+
+    /**
+     * Author: Onskreen
+     * Date: 19/04/2011
+     *
+     * Utility method to check if the token is in the cornerstone panel or not.
+     * Returns true if it's in cornerstone panel else false.
+     */
+    public boolean isInCornerstonePanelWindowPanel() {
+		final ArrayList<WindowPanel> WindowPanels = mService.getWindowPanels();
+		for(int i=0; i<WindowPanels.size(); i++) {
+		    WindowPanel wp = WindowPanels.get(i);
+		    if(wp.isCornerstonePanel()) {
+			if(wp.contains(groupId)) {
+			    return true;
+			}
+		    }
+		}
+		return false;
     }
 
     public void setDummyAnimation() {

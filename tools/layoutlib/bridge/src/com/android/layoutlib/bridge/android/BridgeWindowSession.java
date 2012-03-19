@@ -174,4 +174,15 @@ public final class BridgeWindowSession implements IWindowSession {
         // TODO Auto-generated method stub
         return null;
     }
+
+    /**
+     * Author: Onskreen
+     * Date: 17/02/2011
+     *
+     * Notifies the WindowManagerService to reshuffle its z-order to dispatch
+     * the user input event to the newly focused window.
+     */
+    public void handleFocusChange(IBinder token){
+        // pass for now.
+    }
 }

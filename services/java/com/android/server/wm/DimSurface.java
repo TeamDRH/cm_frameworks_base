@@ -30,6 +30,14 @@ class DimSurface {
     int mLayer = -1;
     int mLastDimWidth, mLastDimHeight;
 
+    /**
+     * Author: Onskreen
+     * Date: 21/12/2011
+     *
+     * Setting DimSurface position variables
+     */
+    int mDimX = 0, mDimY = 0;
+
     DimSurface(SurfaceSession session) {
         if (mDimSurface == null) {
             if (WindowManagerService.SHOW_TRANSACTIONS ||
@@ -58,7 +66,15 @@ class DimSurface {
             try {
                 mLastDimWidth = dw;
                 mLastDimHeight = dh;
-                mDimSurface.setPosition(0, 0);
+				/**
+				 * Author: Onskreen
+				 * Date: 21/12/2011
+				 *
+				 * set the correct position based on the x,y set in
+				 * performLayoutAndPlaceSurfacesLockedInner method.
+				 */
+                //mDimSurface.setPosition(0, 0);
+                mDimSurface.setPosition(mDimX, mDimY);
                 mDimSurface.setSize(dw, dh);
                 mDimSurface.setLayer(layer);
                 mDimSurface.show();
@@ -76,6 +92,8 @@ class DimSurface {
             mDimSurface.setSize(dw, dh);
             mDimSurface.setLayer(layer);
             mDimSurface.setAlpha(((color>>24)&0xff)/255.0f);
+        } else {
+			mDimSurface.setPosition(mDimX, mDimY);
         }
     }
 

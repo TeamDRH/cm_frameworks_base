@@ -37,6 +37,14 @@ class DimAnimator {
     float mDimDeltaPerMs;
     long mLastDimAnimTime;
     
+    /**
+     * Author: Onskreen
+     * Date: 06/05/2011
+     *
+     * Setting DimAnimator position variables
+     */
+    int mDimX = 0, mDimY = 0;
+
     int mLastDimWidth, mLastDimHeight;
 
     DimAnimator (SurfaceSession session) {
@@ -67,7 +75,17 @@ class DimAnimator {
             try {
                 mLastDimWidth = dw;
                 mLastDimHeight = dh;
-                mDimSurface.setPosition(0, 0);
+				/**
+				 * Author: Onskreen
+				 * Date: 30/03/2011
+				 *
+				 * set the correct position based on the x,y set in
+				 * performLayoutAndPlaceSurfacesLockedInner method.
+				 * NOTE (4.8.2011): Dimming feature reverted for now until can
+				 * be resolved why causing issue on Viewsonic.
+				 */
+				mDimSurface.setPosition(mDimX, mDimY);
+				//mDimSurface.setPosition(0,0);
                 mDimSurface.setSize(dw, dh);
                 mDimSurface.show();
             } catch (RuntimeException e) {
@@ -77,6 +95,8 @@ class DimAnimator {
             mLastDimWidth = dw;
             mLastDimHeight = dh;
             mDimSurface.setSize(dw, dh);
+        } else {
+			mDimSurface.setPosition(mDimX, mDimY);
         }
     }
 
