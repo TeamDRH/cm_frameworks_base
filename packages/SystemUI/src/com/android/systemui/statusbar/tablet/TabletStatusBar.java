@@ -218,6 +218,7 @@ public class TabletStatusBar extends StatusBar implements
 
     private SettingsObserver mStatusbarVisibilitySettingObserver;
     private SettingsObserver mQuickLaunchSettingObserver;
+    private SettingsObserver mStatusbarGravitySettingObserver;
 
     public Context getContext() { return mContext; }
 
@@ -706,6 +707,11 @@ public class TabletStatusBar extends StatusBar implements
                 Settings.System.getUriFor(Settings.System.DRH_SYSTEMUI_QUICKLAUNCH_ACTIONS), true,
                 mQuickLaunchSettingObserver);
 
+        mStatusbarGravitySettingObserver = new SettingsObserver(mHandler, MSG_DRH_STATUSBAR_GRAVITY);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.DRH_STATUSBAR_GRAVITY), true, 
+                mStatusbarGravitySettingObserver);
+
         mStatusbarVisibilitySettingObserver = new SettingsObserver(mHandler,
                 MSG_DRH_STATUSBAR_VISIBILITY);
         mContext.getContentResolver().registerContentObserver(
@@ -730,8 +736,6 @@ public class TabletStatusBar extends StatusBar implements
         } else {
             return Gravity.BOTTOM;
         }
-
-
     }
 
     public void onBarHeightChanged(int height) {
@@ -891,6 +895,9 @@ public class TabletStatusBar extends StatusBar implements
                 case MSG_STOP_TICKER:
                     mTicker.halt();
                     break;
+                case MSG_DRH_STATUSBAR_GRAVITY:
+                    updateStatusBarGravity();
+                    break;
                 case MSG_DRH_STATUSBAR_VISIBILITY:
                     updateStatusBarVisibility();
                     break;
@@ -898,6 +905,15 @@ public class TabletStatusBar extends StatusBar implements
                     updateQuickLaunchIcons();
                     break;
             }
+        }
+    }
+
+    protected int updateStatusBarGravity() {
+        if (Settings.System.getInt(mContext.getContentResolver(), 
+                Settings.System.DRH_STATUSBAR_GRAVITY, 0) == 1) {
+            return Gravity.TOP;
+        } else {
+            return Gravity.BOTTOM;
         }
     }
 
