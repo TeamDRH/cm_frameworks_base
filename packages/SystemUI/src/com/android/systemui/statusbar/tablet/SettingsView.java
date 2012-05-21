@@ -69,36 +69,36 @@ public class SettingsView extends LinearLayout implements View.OnClickListener {
 
         final Context context = getContext();
 
-        mAirplane = new AirplaneModeController(context,
-                (CompoundButton)findViewById(R.id.airplane_checkbox));
-        findViewById(R.id.network).setOnClickListener(this);
-        findViewById(R.id.bluetooth).setOnClickListener(this);
-        mBluetooth = new BluetoothController(context,
-					     (CompoundButton)findViewById(R.id.bluetooth_checkbox));
-        mWifi = new WifiController(context,
-				(CompoundButton)findViewById(R.id.wifi_checkbox));
-        mRotate = new AutoRotateController(context,
-                (CompoundButton)findViewById(R.id.rotate_checkbox));
+//        mAirplane = new AirplaneModeController(context,
+//                (CompoundButton)findViewById(R.id.airplane_checkbox));
+//        findViewById(R.id.network).setOnClickListener(this);
+//        findViewById(R.id.bluetooth).setOnClickListener(this);
+//        mBluetooth = new BluetoothController(context,
+//					     (CompoundButton)findViewById(R.id.bluetooth_checkbox));
+//        mWifi = new WifiController(context,
+//				(CompoundButton)findViewById(R.id.wifi_checkbox));
+//        mRotate = new AutoRotateController(context,
+//                (CompoundButton)findViewById(R.id.rotate_checkbox));
         mBrightness = new BrightnessController(context,
                 (ToggleSlider)findViewById(R.id.brightness));
-        mDoNotDisturb = new DoNotDisturbController(context,
-                (CompoundButton)findViewById(R.id.do_not_disturb_checkbox));
+//        mDoNotDisturb = new DoNotDisturbController(context,
+//                (CompoundButton)findViewById(R.id.do_not_disturb_checkbox));
         findViewById(R.id.settings).setOnClickListener(this);
 
-        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_AIRPLANE, 1) == 0)
-            findViewById(R.id.airplane).setVisibility(View.GONE);
+//        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_AIRPLANE, 1) == 0)
+//            findViewById(R.id.airplane).setVisibility(View.GONE);
 
-        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_WIFI, 1) == 0)
-            findViewById(R.id.network).setVisibility(View.GONE);
+//        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_WIFI, 1) == 0)
+//            findViewById(R.id.network).setVisibility(View.GONE);
 
-        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_ROTATION, 1) == 0)
-            findViewById(R.id.rotate).setVisibility(View.GONE);
+//        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_ROTATION, 1) == 0)
+//            findViewById(R.id.rotate).setVisibility(View.GONE);
 
         if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_BRIGHTNESS, 1) == 0)
             findViewById(R.id.brightness_row).setVisibility(View.GONE);
 
-        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_NOTIFICATIONS, 1) == 0)
-            findViewById(R.id.do_not_disturb).setVisibility(View.GONE);
+//        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_NOTIFICATIONS, 1) == 0)
+//            findViewById(R.id.do_not_disturb).setVisibility(View.GONE);
 
         if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.DRH_SYSTEMUI_SETTINGS_STANDARD_SETTINGS, 1) == 0)
             findViewById(R.id.settings).setVisibility(View.GONE);
@@ -118,18 +118,18 @@ public class SettingsView extends LinearLayout implements View.OnClickListener {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        mAirplane.release();
-        mDoNotDisturb.release();
+//        mAirplane.release();
+//        mDoNotDisturb.release();
     }
 
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.network:
-                onClickNetwork();
-                break;
-            case R.id.bluetooth:
-                onClickBluetooth();
-                break;
+//            case R.id.network:
+//                onClickNetwork();
+//                break;
+//            case R.id.bluetooth:
+//                onClickBluetooth();
+//                break;
             case R.id.settings:
                 onClickSettings();
                 break;

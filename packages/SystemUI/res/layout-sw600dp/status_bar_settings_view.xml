@@ -39,6 +39,7 @@
     </LinearLayout>
 
     <!-- Airplane mode -->
+<!--
     <LinearLayout
             android:id="@+id/airplane"
             style="@style/StatusBarPanelSettingsRow"
@@ -62,8 +63,9 @@
                 />
     </LinearLayout>
     <View style="@style/StatusBarPanelSettingsPanelSeparator" />
-
+-->
     <!-- Network -->
+<!--
     <LinearLayout
             android:id="@+id/network"
             style="@style/StatusBarPanelSettingsRow"
@@ -87,8 +89,9 @@
                 />
     </LinearLayout>
     <View style="@style/StatusBarPanelSettingsPanelSeparator" />
-
+-->
     <!-- Bluetooth -->
+<!--
     <LinearLayout
             android:id="@+id/bluetooth"
             style="@style/StatusBarPanelSettingsRow"
@@ -112,8 +115,9 @@
                 />
     </LinearLayout>
     <View style="@style/StatusBarPanelSettingsPanelSeparator" />
-
+-->
     <!-- Rotation lock -->
+<!--
     <LinearLayout
             android:id="@+id/rotate"
             style="@style/StatusBarPanelSettingsRow"
@@ -137,7 +141,7 @@
                 />
     </LinearLayout>
     <View style="@style/StatusBarPanelSettingsPanelSeparator" />
-
+-->
     <!-- Sound -->
     <LinearLayout style="@style/StatusBarPanelSettingsRow" android:id="@+id/volume_row">
         <ImageView
@@ -175,6 +179,7 @@
     <View style="@style/StatusBarPanelSettingsPanelSeparator" />
 
     <!-- Notifications / Do not disturb -->
+<!--
     <LinearLayout
             android:id="@+id/do_not_disturb"
             style="@style/StatusBarPanelSettingsRow"
@@ -197,7 +202,7 @@
                 />
     </LinearLayout>
     <View style="@style/StatusBarPanelSettingsPanelSeparator" />
-
+-->
     <!-- Link to settings -->
     <LinearLayout
             android:id="@+id/settings"
