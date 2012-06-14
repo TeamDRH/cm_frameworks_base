@@ -3372,17 +3372,7 @@ public final class Settings {
         /**
          * @hide
          */
-        public static final String LOCKSCREEN_WEATHER = "lockscreen_weather";
-
-        /**
-         * @hide
-         */
         public static final String USE_WEATHER = "use_weather";
-
-        /**
-         * @hide
-         */
-        public static final String WEATHER_SHOW_LOCATION = "weather_show_location";
 
         /**
          * @hide
@@ -3714,12 +3704,6 @@ public final class Settings {
 		 * @hide
 		 */
 		public static final String LED_SCREEN_ON = "led_screen_on";
-
-        /**
-         * The hostname for this device
-         * @hide
-         */
-        public static final String DEVICE_HOSTNAME = "device_hostname";
 
         /**
          * The hostname for this device
