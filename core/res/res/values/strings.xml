@@ -3446,7 +3446,7 @@
     <string name="global_action_reboot_confirm">Are you sure you want to reboot?</string>
     <string name="global_action_statusbar_toggle">Show / hide the status bar</string>
 
-    <!--Application killed toast -->
+    <!-- Long-press back kill application -->
     <string name="app_killed_message">Application killed</string>
 
     <!-- Lock screen Weather - Weather codes -->
