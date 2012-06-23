@@ -726,6 +726,7 @@ public class TabletStatusBar extends StatusBar implements
         if (Settings.System.getInt(mContext.getContentResolver(),
                 Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE) == View.GONE) {
             mStatusBarView.setVisibility(View.GONE);
+            mStatusBarContainer.setVisibility(View.GONE);
             mHeightReceiver.setHidden(true);
         }
         return sb;
@@ -2062,10 +2063,12 @@ public class TabletStatusBar extends StatusBar implements
         if (Settings.System.getInt(mContext.getContentResolver(),
                 Settings.System.DRH_SYSTEMUI_STATUSBAR_VISIBILITY, View.VISIBLE) == View.VISIBLE) {
             mStatusBarView.setVisibility(View.VISIBLE);
+            mStatusBarContainer.setVisibility(View.VISIBLE);
             mHeightReceiver.setHidden(false);
             notifyUiVisibilityChanged();
         } else {
             mStatusBarView.setVisibility(View.GONE);
+            mStatusBarContainer.setVisibility(View.GONE);
             mHeightReceiver.setHidden(true);
             notifyUiVisibilityChanged();
         }
